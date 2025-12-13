@@ -57,6 +57,22 @@ services:
       timeout: 10s
       retries: 3
 
+# Upload Service
+  upload-service:
+    build: ./services/upload-service
+    container_name: upload-service
+    ports:
+      - "8000:8000"
+    environment:
+      MINIO_ENDPOINT: minio:9000
+      MINIO_ACCESS_KEY: minioadmin
+      MINIO_SECRET_KEY: minioadmin
+      MINIO_BUCKET: psychology-sessions
+    depends_on:
+      - minio
+    networks:
+      - app-network
+      
 volumes:
   minio_data:
   rabbitmq_data:
