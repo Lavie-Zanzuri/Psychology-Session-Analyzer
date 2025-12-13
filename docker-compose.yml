@@ -1,5 +1,22 @@
 
 services:
+  # DataDog Agent
+  datadog-agent:
+    image: gcr.io/datadoghq/agent:7
+    container_name: datadog-agent
+    environment:
+      - DD_API_KEY=${DD_API_KEY}
+      - DD_SITE=${DD_SITE:-datadoghq.com}
+      - DD_LOGS_ENABLED=true
+      - DD_LOGS_CONFIG_CONTAINER_COLLECT_ALL=true
+      - DD_CONTAINER_EXCLUDE="name:datadog-agent"
+      - DD_TAGS=env:dev project:psychology-analyzer
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /proc/:/host/proc/:ro
+      - /sys/fs/cgroup/:/host/sys/fs/cgroup:ro
+    networks:
+      - app-network
   # MinIO - Object Storage (like S3)
   minio:
     image: minio/minio:latest
@@ -20,6 +37,8 @@ services:
       interval: 30s
       timeout: 20s
       retries: 3
+    labels:  
+      com.datadoghq.ad.logs: '[{"source": "python", "service": "minio"}]'
 
   # RabbitMQ - Message Broker
   rabbitmq:
@@ -40,6 +59,8 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
+    labels:
+      com.datadoghq.ad.logs: '[{"source": "python", "service": "RabbitMQ"}]'
 
   # Redis - for caching LLM calls 
   redis:
@@ -56,6 +77,8 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+    labels:
+      com.datadoghq.ad.logs: '[{"source": "python", "service": "redis"}]'
 
 # Upload Service
   upload-service:
@@ -76,6 +99,8 @@ services:
       - rabbitmq
     networks:
       - app-network
+    labels:
+      com.datadoghq.ad.logs: '[{"source": "python", "service": "upload-service"}]'
 
   #event-consumer: for testing only
     #build: ./services/event-consumer
@@ -87,6 +112,27 @@ services:
     #  - rabbitmq
     #networks:
     #  - app-network
+
+# Audio Extractor Service
+  audio-extractor:
+    build: ./services/audio-extractor
+    container_name: audio-extractor
+    environment:
+      MINIO_ENDPOINT: minio:9000
+      MINIO_ACCESS_KEY: minioadmin
+      MINIO_SECRET_KEY: minioadmin
+      MINIO_BUCKET: psychology-sessions
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_USER: admin
+      RABBITMQ_PASS: admin
+    depends_on:
+      - minio
+      - rabbitmq
+    networks:
+      - app-network
+    labels:
+      com.datadoghq.ad.logs: '[{"source": "python", "service": "Extractor Service"}]'  
+
 
 volumes:
   minio_data:
