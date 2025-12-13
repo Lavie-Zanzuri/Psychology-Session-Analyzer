@@ -68,11 +68,26 @@ services:
       MINIO_ACCESS_KEY: minioadmin
       MINIO_SECRET_KEY: minioadmin
       MINIO_BUCKET: psychology-sessions
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_USER: admin
+      RABBITMQ_PASS: admin
     depends_on:
       - minio
+      - rabbitmq
     networks:
       - app-network
-      
+
+  #event-consumer: for testing only
+    #build: ./services/event-consumer
+    #container_name: event-consumer
+    #environment:
+      #RABBITMQ_HOST: rabbitmq
+      ##RABBITMQ_PASS: admin
+   # depends_on:
+    #  - rabbitmq
+    #networks:
+    #  - app-network
+
 volumes:
   minio_data:
   rabbitmq_data:
