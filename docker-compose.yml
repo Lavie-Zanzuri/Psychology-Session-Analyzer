@@ -153,10 +153,51 @@ services:
       - app-network
     labels:
       com.datadoghq.ad.logs: '[{"source": "python", "service": "transcription-service"}]'
+
+  # Analysis Service
+  analysis-service:
+    build: ./services/analysis-service
+    container_name: analysis-service
+    environment:
+      MINIO_ENDPOINT: minio:9000
+      MINIO_ACCESS_KEY: minioadmin
+      MINIO_SECRET_KEY: minioadmin
+      MINIO_BUCKET: psychology-sessions
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_USER: admin
+      RABBITMQ_PASS: admin
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      MONGO_URI: mongodb://mongodb:27017/
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+    depends_on:
+      - minio
+      - rabbitmq
+      - redis
+      - mongodb
+    networks:
+      - app-network
+    labels:
+      com.datadoghq.ad.logs: '[{"source": "python", "service": "analysis-service"}]'    
+
+  # MongoDB
+  mongodb:
+    image: mongo:7
+    container_name: mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - app-network
+    labels:
+      com.datadoghq.ad.logs: '[{"source": "mongodb", "service": "mongodb"}]'
+
 volumes:
   minio_data:
   rabbitmq_data:
   redis_data:
+  mongodb_data:
 
 networks:
   app-network:
