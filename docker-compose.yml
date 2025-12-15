@@ -178,7 +178,22 @@ services:
     networks:
       - app-network
     labels:
-      com.datadoghq.ad.logs: '[{"source": "python", "service": "analysis-service"}]'    
+      com.datadoghq.ad.logs: '[{"source": "python", "service": "analysis-service"}]' 
+  
+  # API Service
+  api-service:
+    build: ./services/api-service
+    container_name: api-service
+    ports:
+      - "8001:8001"
+    environment:
+      MONGO_URI: mongodb://mongodb:27017/
+    depends_on:
+      - mongodb
+    networks:
+      - app-network
+    labels:
+      com.datadoghq.ad.logs: '[{"source": "python", "service": "api-service"}]'       
 
   # MongoDB
   mongodb:
