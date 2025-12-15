@@ -244,7 +244,48 @@ Respond ONLY with JSON (no markdown):
         }
     
     logger.info("✅ Analysis complete!")
+     # Step 4: Identify recurring patterns
+    logger.info("🔄 Identifying recurring patterns...")
     
+    patterns_prompt = f"""Based on this therapy session analysis, identify 3-5 recurring patterns or themes in the patient's behavior, thoughts, or struggles.
+
+Summary of patient utterances with emotions and topics:
+{json.dumps(patient_utterances[:30], indent=2)}
+
+Key insights:
+- Positive topics: {insights.get('positive_topics', [])}
+- Negative topics: {insights.get('negative_topics', [])}
+
+Identify recurring patterns such as:
+- Behavioral patterns
+- Thought patterns
+- Relationship patterns
+- Emotional triggers
+- Coping mechanisms
+
+Respond ONLY with JSON (no markdown):
+{{
+  "recurring_patterns": [
+    "Clear, specific pattern description 1",
+    "Clear, specific pattern description 2",
+    "Clear, specific pattern description 3"
+  ]
+}}"""
+
+    patterns_result = get_cached_or_call_llm(patterns_prompt, "patterns")
+    
+    try:
+        clean_result = patterns_result.strip()
+        if clean_result.startswith("```"):
+            clean_result = clean_result.split("\n", 1)[1].rsplit("\n", 1)[0]
+        
+        patterns_data = json.loads(clean_result)
+        recurring_patterns = patterns_data.get("recurring_patterns", [])
+    except Exception as e:
+        logger.error(f"Error parsing patterns: {e}")
+        recurring_patterns = []
+    
+    logger.info(f"✅ Identified {len(recurring_patterns)} recurring patterns")
     return {
         "speaker_mapping": {
             "therapist": therapist_speaker,
@@ -252,12 +293,14 @@ Respond ONLY with JSON (no markdown):
         },
         "analyzed_utterances": analyzed_utterances,
         "insights": insights,
+        "recurring_patterns": recurring_patterns,  
         "summary": {
             "total_utterances": len(analyzed_utterances),
             "patient_utterances": len(patient_utterances),
             "therapist_utterances": len(analyzed_utterances) - len(patient_utterances)
         }
     }
+
 
 def callback(ch, method, properties, body):
     """Process transcription_ready event"""
